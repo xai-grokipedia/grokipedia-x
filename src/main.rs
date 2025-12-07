@@ -1,5 +1,6 @@
 use std::{env, error::Error, fmt, fs};
 
+use chrono::Utc;
 use dotenvy::dotenv;
 use futures::StreamExt;
 use mongodb::{
@@ -91,11 +92,15 @@ async fn upsert_summary_in_mongo(summary_payload: &Value) -> Result<(), Box<dyn 
         .database(&db_name)
         .collection::<Document>(&collection_name);
 
-    let doc_id = summary_payload
+    let model_identifier = summary_payload
         .get("model")
         .and_then(|value| value.as_str())
-        .unwrap_or("latest-summary")
-        .to_string();
+        .unwrap_or("latest-summary");
+    let doc_id = format!(
+        "{}-{}",
+        model_identifier,
+        Utc::now().format("%Y%m%dT%H%M%S%.3fZ")
+    );
 
     let mut document = to_document(summary_payload)?;
     document.insert("_id", doc_id.clone());

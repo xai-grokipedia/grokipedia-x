@@ -693,6 +693,7 @@ dependencies = [
 name = "grokipedia-x"
 version = "0.1.0"
 dependencies = [
+ "chrono",
  "dotenvy",
  "futures",
  "mongodb",

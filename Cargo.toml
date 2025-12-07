@@ -14,3 +14,4 @@ tonic = "0.14.2"
 futures = "0.3"
 redis = { version = "0.25", features = ["tokio-comp"] }
 mongodb = { version = "2.8", features = ["tokio-runtime"] }
+chrono = { version = "0.4", default-features = false, features = ["clock"] }
