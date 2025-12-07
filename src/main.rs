@@ -47,6 +47,11 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let news_payload = fetch_news(&bearer_token).await?;
     let announcements_payload = fetch_announcements(&bearer_token).await?;
+    let general_payload = fetch_general(&bearer_token).await?;
+    let whale_payload = fetch_relevant(&bearer_token).await?;
+    let recency_payload = fetch_relevant(&bearer_token).await?;
+    let lando_payload = fetch_lando(&bearer_token).await?;
+    let politics_payload = fetch_politics(&bearer_token).await?;
     println!(
         "=== Raw X News payload ===\n{}",
         serde_json::to_string_pretty(&news_payload)?
@@ -55,14 +60,41 @@ async fn main() -> Result<(), Box<dyn Error>> {
         "=== Raw X Announcements payload ===\n{}",
         serde_json::to_string_pretty(&announcements_payload)?
     );
+    println!(
+        "=== Raw X General payload ===\n{}",
+        serde_json::to_string_pretty(&general_payload)?
+    );
+    println!(
+        "=== Raw X Whale payload ===\n{}",
+        serde_json::to_string_pretty(&whale_payload)?
+    );
+    println!(
+        "=== Raw X Recency payload ===\n{}",
+        serde_json::to_string_pretty(&recency_payload)?
+    );
+    println!(
+        "=== Raw X Lando payload ===\n{}",
+        serde_json::to_string_pretty(&lando_payload)?
+    );
+    println!(
+        "=== Raw X Politics payload ===\n{}",
+        serde_json::to_string_pretty(&politics_payload)?
+    );
 
     // CHANGE THE SOURCE OF INFORMATION HERE
-    let summary = summarize_with_retry(&announcements_payload, &xai_api_key, &xai_model).await?;
+    let summary = summarize_with_retry(&recency_payload, &xai_api_key, &xai_model).await?;
     println!("\n=== xAI summary ({xai_model}) ===\n{summary}");
+
+    let parsed_summary: Value = serde_json::from_str(&summary).map_err(|err| {
+        format!("xAI summary is not valid JSON array. Parsing failed: {err}")
+    })?;
+    if !parsed_summary.is_array() {
+        return Err("xAI summary must be a JSON array.".into());
+    }
 
     let summary_payload = json!({
         "model": xai_model,
-        "summary": summary,
+        "summary": parsed_summary,
     });
     fs::write(
         SUMMARY_OUTPUT_PATH,
@@ -119,12 +151,85 @@ async fn upsert_summary_in_mongo(summary_payload: &Value) -> Result<(), Box<dyn 
     Ok(())
 }
 
+
+async fn fetch_politics(bearer_token: &str) -> Result<Value, Box<dyn Error>> {
+    
+    // let url = format!("{NEWS_ENDPOINT}?news.fields={NEWS_FIELDS}");
+    let url = "https://api.x.com/2/tweets/search/all?max_results=100&query=politics";
+    let client = reqwest::Client::new();
+
+    let response = client
+        .get(url)
+        .bearer_auth(bearer_token)
+        .header(ACCEPT, HeaderValue::from_static("application/json"))
+        .header(USER_AGENT, HeaderValue::from_static(APP_USER_AGENT))
+        .send()
+        .await?
+        .error_for_status()?;
+
+    Ok(response.json().await?)
+}
+
+async fn fetch_lando(bearer_token: &str) -> Result<Value, Box<dyn Error>> {
+    
+    // let url = format!("{NEWS_ENDPOINT}?news.fields={NEWS_FIELDS}");
+    let url = 
+    r#"https://api.x.com/2/tweets/search/recent?max_results=100&query=(%20%20%20breaking%20OR%20%20%20%20"just%20in"%20OR%20%20%20announcement%20OR%20%20%20update%20OR%20%20%20"new%20report"%20OR%20%20%20"major%20development"%20)%20(%20%20url%3Anytimes.com%20OR%20%20%20url%3Acnn.com%20OR%20%20%20url%3Abloomberg.com%20OR%20%20%20url%3Afoxnews.com%20OR%20%20%20url%3Andtv.com%20OR%20%20%20url%3Aindiatimes.com%20OR%20%20%20url%3Achannelnewsasia.com%20)%20has%3Alinks%20lang%3Aen%20min_likes%3A100%20-is%3Aretweet%20-is%3Areply&sort_order=recency"#.to_string();
+    let client = reqwest::Client::new();
+
+    let response = client
+        .get(url)
+        .bearer_auth(bearer_token)
+        .header(ACCEPT, HeaderValue::from_static("application/json"))
+        .header(USER_AGENT, HeaderValue::from_static(APP_USER_AGENT))
+        .send()
+        .await?
+        .error_for_status()?;
+
+    Ok(response.json().await?)
+}
+
+async fn fetch_relevant(bearer_token: &str) -> Result<Value, Box<dyn Error>> {
+    // let url = format!("{NEWS_ENDPOINT}?news.fields={NEWS_FIELDS}");
+    let url = format!(
+        "https://api.x.com/2/tweets/search/recent?max_results=100&query=breaking%20min_likes%3A10000%20min_reposts%3A1000%20is%3Averified%20-has%3Ahashtags%20lang%3Aen%20-has%3Alinks"
+    );
+    let client = reqwest::Client::new();
+
+    let response = client
+        .get(url)
+        .bearer_auth(bearer_token)
+        .header(ACCEPT, HeaderValue::from_static("application/json"))
+        .header(USER_AGENT, HeaderValue::from_static(APP_USER_AGENT))
+        .send()
+        .await?
+        .error_for_status()?;
+
+    Ok(response.json().await?)
+}
+
 async fn fetch_news(bearer_token: &str) -> Result<Value, Box<dyn Error>> {
     // let url = format!("{NEWS_ENDPOINT}?news.fields={NEWS_FIELDS}");
     let url = format!(
-        "https://api.x.com/2/tweets/search/recent?max_results=50&query=breaking%20min_likes%3A10000%20min_reposts%3A1000%20is%3Averified%20-has%3Ahashtags%20lang%3Aen%20-has%3Alinks"
+        "https://api.x.com/2/tweets/search/recent?max_results=100&query=breaking%20min_likes%3A1000%20min_reposts%3A200%20is%3Averified%20-has%3Ahashtags%20lang%3Aen%20-has%3Alinks"
     );
 
+    let client = reqwest::Client::new();
+
+    let response = client
+        .get(url)
+        .bearer_auth(bearer_token)
+        .header(ACCEPT, HeaderValue::from_static("application/json"))
+        .header(USER_AGENT, HeaderValue::from_static(APP_USER_AGENT))
+        .send()
+        .await?
+        .error_for_status()?;
+
+    Ok(response.json().await?)
+}
+
+async fn fetch_general(bearer_token: &str) -> Result<Value, Box<dyn Error>> {
+    let url = r#"https://api.x.com/2/tweets/search/recent?max_results=100&query=(%20%20%20"breaking"%20OR%20"update"%20OR%20"announcement"%20OR%20"new%20report"%20OR%20%20%20%20"published%20today"%20OR%20"leaked"%20OR%20"revealed"%20OR%20"new%20study"%20OR%20%20%20"launch"%20OR%20"rollout"%20)%20(%20%20%20"analysis"%20OR%20"deep%20dive"%20OR%20"context"%20OR%20"implications"%20OR%20%20%20%20"counterintuitive"%20OR%20"underappreciated"%20OR%20"the%20real%20reason"%20OR%20%20%20%20"if%20you%20zoom%20out"%20OR%20"why%20this%20matters"%20)%20min_likes%3A100%20min_reposts%3A100%20is%3Averified%20-has%3Ahashtags%20lang%3Aen%20has%3Alinks"#.to_string();
     let client = reqwest::Client::new();
 
     let response = client
@@ -141,7 +246,7 @@ async fn fetch_news(bearer_token: &str) -> Result<Value, Box<dyn Error>> {
 
 async fn fetch_announcements(bearer_token: &str) -> Result<Value, Box<dyn Error>> {
     let url = format!(
-        "https://api.x.com/2/tweets/search/recent?max_results=50&query=announcement%20min_likes%3A100%20min_reposts%3A100%20is%3Averified%20-has%3Ahashtags%20lang%3Aen%20has%3Alinks"
+        "https://api.x.com/2/tweets/search/recent?max_results=100&query=announcement%20min_likes%3A100%20min_reposts%3A100%20is%3Averified%20-has%3Ahashtags%20lang%3Aen%20has%3Alinks"
     );
     let client = reqwest::Client::new();
 
@@ -158,8 +263,7 @@ async fn fetch_announcements(bearer_token: &str) -> Result<Value, Box<dyn Error>
 }
 
 async fn summarize_with_xai(
-    news_payload: &Value,
-
+    payload: &Value,
     api_key: &str,
     model: &str,
 ) -> Result<String, Box<dyn Error>> {
@@ -167,9 +271,23 @@ async fn summarize_with_xai(
         .await
         .map_err(map_client_error)?;
 
+    let expected_entries = payload
+        .get("data")
+        .and_then(|value| value.as_array())
+        .map(|arr| arr.len())
+        .unwrap_or(0);
+    let entry_directive = if expected_entries > 0 {
+        format!(
+            "Return a JSON array (not wrapped in an object) with at most {expected_entries} objects, each corresponding to one payload.data[i] in order. Make a best-effort attempt to produce an entry for every payload item (use tools/web search if needed) and only skip an item if, after searching, no relevant Grokipedia page exists; when skipping, simply omit the entry. Do not combine multiple payload items into one entry."
+        )
+    } else {
+        "If payload.data is empty, return an empty JSON array (just []).".to_string()
+    };
+
     let user_prompt = format!(
-        "Here is the JSON payload returned by the X News endpoint: {}. You are the real time pipeline agent for breaking X news to Grokipedia. Based on the entire JSON, the breaking news data provided, determine what are the concerning organizations or individuals involved and find an existing Grokipedia article that matches the context of that same organization or individual. Here is what I need in from you: the url of the grokipedia page (if it exists), then i need your suggested edit based on that initial JSON payload of relevant news, and finally i need you to grab the ORIGINAL TEXT within that grokipedia page that is subject to be changed and updated. Use your tools to go to the URL of the grokipedia page if it exists in order to fetch REAL text from the article that is the MOST relevant to the suggested edit from the news claim. Word for word, that will be the ORIGINAL TEXT. Make sure the JSON has inner objects of multiple entries for this which each have the fields that i requested.",
-        serde_json::to_string(news_payload)?
+        "Here is the JSON payload returned by the X News endpoint: {}. You are the real time pipeline agent for breaking X news to Grokipedia. Based on the entire JSON, the breaking news data provided, determine what are the concerning organizations or individuals involved and find an existing Grokipedia article that matches the context of that same organization or individual. Here is what I need in from you: the url of the grokipedia page (if it exists), then i need your suggested edit based on that initial JSON payload of relevant news, and finally i need you to grab the ORIGINAL TEXT within that grokipedia page that is subject to be changed and updated. Use your tools to go to the URL of the grokipedia page if it exists in order to fetch REAL text from the article that is the MOST relevant to the suggested edit from the news claim. Word for word, that will be the ORIGINAL TEXT. Make sure the JSON has inner objects of multiple entries for this which each have the fields that i requested. {}",
+        serde_json::to_string(payload)?,
+        entry_directive
     );
 
     let request = build_request(
