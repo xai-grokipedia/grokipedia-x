@@ -2,19 +2,24 @@
   "model": "grok-4-1-fast-reasoning",
   "summary": [
     {
-      "url": "https://grokipedia.com/page/Peter_Navarro",
-      "suggested_edit": "In a recent X post replying to Greg Autry (co-author of Navarro's 'Death by China'), a user stated: 'Oh yes. Free trade benefits the laptop class. Their real wages go up. Working class, not so much. Cheaper consumer goods do not make up for the wage stagnation.' This aligns with the book's critique of free trade policies disproportionately benefiting elites over the working class.",
-      "original_text": "In Death by China: Confronting the Dragon – A Global Call to Action, co-authored with Greg Autry and published in 2011"
+      "url": "https://grokipedia.com/page/Canon_Inc.",
+      "suggested_edit": "In the section on Canon Medical Systems and CT developments, append after the mention of the Aquilion series innovations: 'In December 2025, Canon unveiled next-generation CT technology for advanced medical imaging, enhancing diagnostic capabilities (RT @sciencegirl on X, id 1997735519091036245).'",
+      "original_text": "Canon Medical Systems develops and manufactures systems for computed tomography (CT) , including the Aquilion series, which introduced innovations such as the world's first multislice helical CT in 1998, a 320-row area detector CT in 2007, and the high-definition Aquilion Precision in 2017, enabling ultra-high-resolution imaging with reduced radiation doses."
     },
     {
-      "url": "https://grokipedia.com/page/Brian_Lilley",
-      "suggested_edit": "Brian Lilley posted on X: 'I've been saying that waiting Trump out would cost real jobs. The Elbows UP retirees and laptop class said no deal was the…', critiquing delays in trade deals under Trump and their impact on jobs, distinguishing between working class and 'laptop class'.",
-      "original_text": "For instance, in 2025, Lilley critiqued Canada's trade vulnerabilities amid U.S. tariff threats under President Donald Trump, highlighting Ontario's $75 million ad campaign misusing Ronald Reagan's words as a failed attempt to influence negotiations, which prompted Trump to halt talks. [19] [20]"
+      "url": "https://grokipedia.com/page/Ola_Electric",
+      "suggested_edit": "In the section discussing 4680 Bharat battery cells and vehicle deliveries, update or append to the Roadster X or S1 Pro+ mentions: 'Ola Electric began mass deliveries of vehicles powered by its 4680 Bharat Cell in December 2025, marking a milestone as the first company to do so at scale (RT @thebigbulldeals on X, id 1997735429987242280).'",
+      "original_text": "Ola Electric has integrated its proprietary 4680 cylindrical Bharat cells into the Roadster X series, starting from August 2025, to achieve higher energy density and improved efficiency compared to earlier prismatic cells."
     },
     {
-      "url": "https://grokipedia.com/page/Didi_Gregorius",
-      "suggested_edit": "On December 7, 2025 (marking 11 years since the trade), X user @MaxMannis recalled: '11 years ago today: The Yankees trade for Didi Gregorius, and a young seventh grade Max Mannis gets in trouble for gasping w…' upon hearing the news in class.",
-      "original_text": "On December 5, 2014, the Diamondbacks traded Gregorius to the New York Yankees in a three-team deal also involving the Detroit Tigers; Arizona received outfielder Peter O'Brien from New York and pitcher Robbie Ray from Detroit, while the Tigers acquired pitcher Shane Greene from the Yankees."
+      "url": "https://grokipedia.com/page/Glo_(company)",
+      "suggested_edit": "In the 2025 network upgrades section, append after mentions of nationwide upgrades: 'By December 2025, Globacom announced the successful completion of a massive nationwide network infrastructure upgrade, powered by significant new spectrum acquisitions (X post id 1997735145902690698).'",
+      "original_text": "In 2025, Glo has intensified its infrastructure enhancements by deploying new base stations aimed at elevating voice and data service quality, with a particular emphasis on densifying coverage in high-traffic urban hubs such as Lagos and Abuja. These upgrades include the addition of thousands of 4G LTE sites nationwide, alongside fiber relocations to mitigate vandalism and improve overall network reliability."
+    },
+    {
+      "url": "https://grokipedia.com/page/Canon_Inc.",
+      "suggested_edit": "In the section on Canon Medical Systems and CT developments, append after the mention of the Aquilion series innovations: 'In December 2025, Canon unveiled next-generation CT technology for advanced medical imaging, enhancing diagnostic capabilities (RT @sciencegirl on X, id 1997735440468840580).'",
+      "original_text": "Canon Medical Systems develops and manufactures systems for computed tomography (CT) , including the Aquilion series, which introduced innovations such as the world's first multislice helical CT in 1998, a 320-row area detector CT in 2007, and the high-definition Aquilion Precision in 2017, enabling ultra-high-resolution imaging with reduced radiation doses."
     }
   ]
 }

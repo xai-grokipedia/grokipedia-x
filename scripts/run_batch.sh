@@ -1,7 +1,7 @@
 #!/bin/bash
   set -euo pipefail
 
-  queries=("laptop class" "drone wars" "cloud seeding" "technology" "healthcare")
+  queries=("mermaid man" "drone wars" "cloud seeding" "technology" "healthcare")
 
   for q in "${queries[@]}"; do
     echo "=== Running pipeline for \"$q\" ==="
