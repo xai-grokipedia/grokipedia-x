@@ -10,6 +10,7 @@ use mongodb::{
 };
 use reqwest::header::{ACCEPT, HeaderValue, USER_AGENT};
 use serde_json::{Value, json};
+use urlencoding::encode;
 use xai_rs::{
     AsyncClient, XaiError,
     client::async_client::xai_api::tool_call,
@@ -45,47 +46,24 @@ async fn main() -> Result<(), Box<dyn Error>> {
     })?;
     let xai_model = env::var(XAI_MODEL_ENV).unwrap_or_else(|_| DEFAULT_XAI_MODEL.to_string());
 
-    let news_payload = fetch_news(&bearer_token).await?;
-    let announcements_payload = fetch_announcements(&bearer_token).await?;
-    let general_payload = fetch_general(&bearer_token).await?;
-    let whale_payload = fetch_relevant(&bearer_token).await?;
-    let recency_payload = fetch_relevant(&bearer_token).await?;
-    let lando_payload = fetch_lando(&bearer_token).await?;
-    let politics_payload = fetch_politics(&bearer_token).await?;
+    let query = env::args()
+        .nth(1)
+        .unwrap_or_else(|| "government".to_string());
+    let payload = fetch_with_query(&bearer_token, &query).await?;
+
     println!(
-        "=== Raw X News payload ===\n{}",
-        serde_json::to_string_pretty(&news_payload)?
-    );
-    println!(
-        "=== Raw X Announcements payload ===\n{}",
-        serde_json::to_string_pretty(&announcements_payload)?
-    );
-    println!(
-        "=== Raw X General payload ===\n{}",
-        serde_json::to_string_pretty(&general_payload)?
-    );
-    println!(
-        "=== Raw X Whale payload ===\n{}",
-        serde_json::to_string_pretty(&whale_payload)?
-    );
-    println!(
-        "=== Raw X Recency payload ===\n{}",
-        serde_json::to_string_pretty(&recency_payload)?
-    );
-    println!(
-        "=== Raw X Lando payload ===\n{}",
-        serde_json::to_string_pretty(&lando_payload)?
-    );
-    println!(
-        "=== Raw X Politics payload ===\n{}",
-        serde_json::to_string_pretty(&politics_payload)?
+        "=== Raw X payload for query: {query} ===\n{}",
+        serde_json::to_string_pretty(&payload)?
     );
 
-    // CHANGE THE SOURCE OF INFORMATION HERE
-    let summary = summarize_with_retry(&recency_payload, &xai_api_key, &xai_model).await?;
+    let summary = summarize_with_retry(&payload, &xai_api_key, &xai_model).await?;
     println!("\n=== xAI summary ({xai_model}) ===\n{summary}");
 
-    let parsed_summary: Value = serde_json::from_str(&summary).map_err(|err| {
+    let array_slice = summary
+        .find('[')
+        .and_then(|start| summary.rfind(']').map(|end| &summary[start..=end]))
+        .ok_or("xAI summary missing JSON array delimiters.")?;
+    let parsed_summary: Value = serde_json::from_str(array_slice).map_err(|err| {
         format!("xAI summary is not valid JSON array. Parsing failed: {err}")
     })?;
     if !parsed_summary.is_array() {
@@ -151,6 +129,66 @@ async fn upsert_summary_in_mongo(summary_payload: &Value) -> Result<(), Box<dyn 
     Ok(())
 }
 
+async fn fetch_with_query(bearer_token: &str, raw_query: &str) -> Result<Value, Box<dyn Error>> {
+    let encoded_query = encode(raw_query);
+    let url = format!(
+        "https://api.x.com/2/tweets/search/all?max_results=100&query={encoded_query}"
+    );
+    let client = reqwest::Client::new();
+
+    let response = client
+        .get(url)
+        .bearer_auth(bearer_token)
+        .header(ACCEPT, HeaderValue::from_static("application/json"))
+        .header(USER_AGENT, HeaderValue::from_static(APP_USER_AGENT))
+        .send()
+        .await?
+        .error_for_status()?;
+
+    Ok(response.json().await?)
+}
+
+
+async fn fetch_crime(bearer_token: &str) -> Result<Value, Box<dyn Error>> {
+    
+    // let url = format!("{NEWS_ENDPOINT}?news.fields={NEWS_FIELDS}");
+    let url = "https://api.x.com/2/tweets/search/all?max_results=100&query=crime";
+    let client = reqwest::Client::new();
+
+    let response = client
+        .get(url)
+        .bearer_auth(bearer_token)
+        .header(ACCEPT, HeaderValue::from_static("application/json"))
+        .header(USER_AGENT, HeaderValue::from_static(APP_USER_AGENT))
+        .send()
+        .await?
+        .error_for_status()?;
+
+    Ok(response.json().await?)
+}
+
+
+
+async fn fetch_sports(bearer_token: &str) -> Result<Value, Box<dyn Error>> {
+    
+    // let url = format!("{NEWS_ENDPOINT}?news.fields={NEWS_FIELDS}");
+    let url = 
+        r#"https://api.x.com/2/tweets/search/recent?max_results=100&query=(cricket%20OR%20basketball%20OR%20football%20OR%20soccer%20OR%20baseball%20OR%20athletics)%20(%20%20url%3Anytimes.com%20OR%20%20%20url%3Acnn.com%20OR%20%20%20url%3Abloomberg.com%20OR%20%20%20url%3Afoxnews.com%20OR%20%20%20url%3Andtv.com%20OR%20%20%20url%3Aindiatimes.com%20OR%20%20%20url%3Achannelnewsasia.com%20)%20has%3Alinks%20lang%3Aen%20min_likes%3A10%20-is%3Aretweet%20-is%3Areply&sort_order=recency"#.to_string();
+    let client = reqwest::Client::new();
+
+    let response = client
+        .get(url)
+        .bearer_auth(bearer_token)
+        .header(ACCEPT, HeaderValue::from_static("application/json"))
+        .header(USER_AGENT, HeaderValue::from_static(APP_USER_AGENT))
+        .send()
+        .await?
+        .error_for_status()?;
+
+    Ok(response.json().await?)
+}
+
+
 
 async fn fetch_politics(bearer_token: &str) -> Result<Value, Box<dyn Error>> {
     
@@ -211,7 +249,7 @@ async fn fetch_relevant(bearer_token: &str) -> Result<Value, Box<dyn Error>> {
 async fn fetch_news(bearer_token: &str) -> Result<Value, Box<dyn Error>> {
     // let url = format!("{NEWS_ENDPOINT}?news.fields={NEWS_FIELDS}");
     let url = format!(
-        "https://api.x.com/2/tweets/search/recent?max_results=100&query=breaking%20min_likes%3A1000%20min_reposts%3A200%20is%3Averified%20-has%3Ahashtags%20lang%3Aen%20-has%3Alinks"
+        "https://api.x.com/2/tweets/search/recent?max_results=100&query=breaking%20min_likes%3A10%20min_reposts%3A200%20is%3Averified%20-has%3Ahashtags%20lang%3Aen%20-has%3Alinks"
     );
 
     let client = reqwest::Client::new();
@@ -278,7 +316,7 @@ async fn summarize_with_xai(
         .unwrap_or(0);
     let entry_directive = if expected_entries > 0 {
         format!(
-            "Return a JSON array (not wrapped in an object) with at most {expected_entries} objects, each corresponding to one payload.data[i] in order. Make a best-effort attempt to produce an entry for every payload item (use tools/web search if needed) and only skip an item if, after searching, no relevant Grokipedia page exists; when skipping, simply omit the entry. Do not combine multiple payload items into one entry."
+            "Return a JSON array (not wrapped in an object) with at most {expected_entries} objects, each corresponding to one payload.data[i] in order. Make a best-effort attempt to produce an entry for every payload item (use tools/web search if needed) and only skip an item if, after searching, no relevant Grokipedia page exists. When you skip, omit the entry entirely instead of outputting null or empty fields. Do not combine multiple payload items into one entry."
         )
     } else {
         "If payload.data is empty, return an empty JSON array (just []).".to_string()
