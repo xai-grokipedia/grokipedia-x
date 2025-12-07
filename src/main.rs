@@ -57,7 +57,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     );
 
     // CHANGE THE SOURCE OF INFORMATION HERE
-    let summary = summarize_with_xai(&announcements_payload, &xai_api_key, &xai_model).await?;
+    let summary = summarize_with_retry(&announcements_payload, &xai_api_key, &xai_model).await?;
     println!("\n=== xAI summary ({xai_model}) ===\n{summary}");
 
     let summary_payload = json!({
@@ -223,6 +223,37 @@ async fn summarize_with_xai(
     } else {
         Ok(summary)
     }
+}
+
+async fn summarize_with_retry(
+    payload: &Value,
+    api_key: &str,
+    model: &str,
+) -> Result<String, Box<dyn Error>> {
+    const MAX_ATTEMPTS: usize = 3;
+    let mut last_error: Option<Box<dyn Error>> = None;
+
+    for attempt in 1..=MAX_ATTEMPTS {
+        match summarize_with_xai(payload, api_key, model).await {
+            Ok(summary) => return Ok(summary),
+            Err(err) => {
+                let err_msg = err.to_string();
+                let is_gateway_timeout = err_msg.contains("invalid compression flag")
+                    && err_msg.contains("504 Gateway Timeout");
+
+                if !is_gateway_timeout || attempt == MAX_ATTEMPTS {
+                    return Err(err);
+                }
+
+                println!(
+                    "summarize_with_xai attempt {attempt} failed due to gateway timeout, retrying..."
+                );
+                last_error = Some(err);
+            }
+        }
+    }
+
+    Err(last_error.unwrap())
 }
 
 fn map_client_error(err: XaiError) -> Box<dyn Error> {
