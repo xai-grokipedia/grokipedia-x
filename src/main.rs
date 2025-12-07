@@ -45,12 +45,18 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let xai_model = env::var(XAI_MODEL_ENV).unwrap_or_else(|_| DEFAULT_XAI_MODEL.to_string());
 
     let news_payload = fetch_news(&bearer_token).await?;
+    let announcements_payload = fetch_announcements(&bearer_token).await?;
     println!(
         "=== Raw X News payload ===\n{}",
         serde_json::to_string_pretty(&news_payload)?
     );
+    println!(
+        "=== Raw X Announcements payload ===\n{}",
+        serde_json::to_string_pretty(&announcements_payload)?
+    );
 
-    let summary = summarize_with_xai(&news_payload, &xai_api_key, &xai_model).await?;
+    // CHANGE THE SOURCE OF INFORMATION HERE
+    let summary = summarize_with_xai(&announcements_payload, &xai_api_key, &xai_model).await?;
     println!("\n=== xAI summary ({xai_model}) ===\n{summary}");
 
     let summary_payload = json!({
@@ -128,8 +134,27 @@ async fn fetch_news(bearer_token: &str) -> Result<Value, Box<dyn Error>> {
     Ok(response.json().await?)
 }
 
+async fn fetch_announcements(bearer_token: &str) -> Result<Value, Box<dyn Error>> {
+    let url = format!(
+        "https://api.x.com/2/tweets/search/recent?max_results=50&query=announcement%20min_likes%3A100%20min_reposts%3A100%20is%3Averified%20-has%3Ahashtags%20lang%3Aen%20has%3Alinks"
+    );
+    let client = reqwest::Client::new();
+
+    let response = client
+        .get(url)
+        .bearer_auth(bearer_token)
+        .header(ACCEPT, HeaderValue::from_static("application/json"))
+        .header(USER_AGENT, HeaderValue::from_static(APP_USER_AGENT))
+        .send()
+        .await?
+        .error_for_status()?;
+
+    Ok(response.json().await?)
+}
+
 async fn summarize_with_xai(
     news_payload: &Value,
+
     api_key: &str,
     model: &str,
 ) -> Result<String, Box<dyn Error>> {
