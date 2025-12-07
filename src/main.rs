@@ -9,6 +9,7 @@ use mongodb::{
     options::UpdateOptions,
 };
 use reqwest::header::{ACCEPT, HeaderValue, USER_AGENT};
+use serde::Deserialize;
 use serde_json::{Value, json};
 use urlencoding::encode;
 use xai_rs::{
